@@ -84,7 +84,14 @@ else
     print_warning "mypy未安装，跳过类型检查"
 fi
 
-# 4. 运行测试
+# 4. 修复测试问题
+print_step "修复测试问题"
+if [ -f "fix-test-issues.sh" ]; then
+    print_warning "运行测试修复脚本..."
+    bash fix-test-issues.sh > /dev/null 2>&1 || true
+fi
+
+# 5. 运行测试
 print_step "运行测试"
 if command -v pytest &> /dev/null; then
     if [ -d "tests" ]; then
@@ -95,13 +102,16 @@ if command -v pytest &> /dev/null; then
             pytest tests/ -v || true
         fi
     else
-        print_warning "未找到tests目录"
+        print_warning "未找到tests目录，运行测试修复脚本"
+        if [ -f "fix-test-issues.sh" ]; then
+            bash fix-test-issues.sh
+        fi
     fi
 else
     print_warning "pytest未安装，跳过测试"
 fi
 
-# 5. 安全检查
+# 6. 安全检查
 print_step "安全检查"
 if command -v bandit &> /dev/null; then
     if bandit -r . --severity-level medium > /dev/null 2>&1; then
@@ -114,7 +124,7 @@ else
     print_warning "bandit未安装，跳过安全检查"
 fi
 
-# 6. 依赖漏洞检查
+# 7. 依赖漏洞检查
 print_step "依赖漏洞检查"
 if command -v pip-audit &> /dev/null; then
     if pip-audit --desc > /dev/null 2>&1; then
@@ -127,7 +137,7 @@ else
     print_warning "pip-audit未安装，跳过依赖漏洞检查"
 fi
 
-# 7. Docker构建测试
+# 8. Docker构建测试
 print_step "Docker构建测试"
 if command -v docker &> /dev/null; then
     if docker build -t fastapi-books-test . > /dev/null 2>&1; then
@@ -141,7 +151,7 @@ else
     print_warning "Docker未安装，跳过Docker构建测试"
 fi
 
-# 8. 检查是否有更改需要提交
+# 9. 检查是否有更改需要提交
 print_step "检查文件更改"
 if git diff --quiet && git diff --staged --quiet; then
     print_success "没有文件更改，所有问题已修复"

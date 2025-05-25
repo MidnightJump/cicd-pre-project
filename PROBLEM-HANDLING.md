@@ -10,6 +10,7 @@
 - 代码格式问题 (Black, isort)
 - 代码质量问题 (flake8, mypy)
 - 测试失败 (单元测试、集成测试)
+- 测试依赖问题 (httpx, pytest版本兼容性)
 - 安全检查失败 (Bandit, pip-audit)
 - Docker构建失败
 - GitHub Actions版本过时问题
@@ -74,6 +75,9 @@ isort .
 
 # 修复GitHub Actions版本问题
 bash update-github-actions.sh
+
+# 修复测试问题
+bash fix-test-issues.sh
 
 # 重新测试
 pytest tests/ -v
@@ -230,7 +234,78 @@ git push origin hotfix/update-github-actions-$(date +%Y%m%d)
 | `docker/build-push-action`   | v6       | Docker构建推送 |
 | `codecov/codecov-action`     | v4       | 代码覆盖率     |
 
-### 5. 紧急生产问题处理
+### 5. 测试问题处理
+
+#### 常见测试错误：
+- `TypeError: __init__() got an unexpected keyword argument 'app'`
+- `ImportError: No module named 'httpx'`
+- `pytest collection errors`
+- `Coverage threshold not met`
+
+#### 处理步骤：
+
+##### 步骤1: 运行测试修复脚本
+```bash
+# 运行专用测试修复脚本
+bash fix-test-issues.sh
+
+# 或者快速验证
+bash run-quick-test.sh
+```
+
+##### 步骤2: 手动修复具体问题
+
+**httpx AsyncClient问题：**
+```bash
+# 老版本写法（会出错）
+async with httpx.AsyncClient(app=app) as client:
+
+# 新版本写法（正确）
+from httpx import ASGITransport
+transport = ASGITransport(app=app)
+async with httpx.AsyncClient(transport=transport) as client:
+```
+
+**依赖问题：**
+```bash
+# 安装缺失的测试依赖
+pip install pytest pytest-cov httpx
+
+# 检查版本兼容性
+pip install --upgrade pytest httpx
+```
+
+**测试文件结构问题：**
+```bash
+# 确保正确的目录结构
+mkdir -p tests/integration
+touch tests/__init__.py
+touch tests/integration/__init__.py
+```
+
+##### 步骤3: 验证修复
+```bash
+# 快速验证语法
+python -m py_compile tests/test_books.py
+
+# 运行单元测试
+pytest tests/test_books.py -v
+
+# 运行所有测试
+pytest tests/ -v --tb=short
+```
+
+##### 常见测试问题和解决方案：
+
+| 错误类型                  | 原因             | 解决方案             |
+| ------------------------- | ---------------- | -------------------- |
+| `httpx AsyncClient error` | httpx版本不兼容  | 使用ASGITransport    |
+| `ModuleNotFoundError`     | 缺失依赖         | `pip install` 缺失包 |
+| `Collection errors`       | 测试文件语法错误 | 检查Python语法       |
+| `Import errors`           | 路径问题         | 添加__init__.py文件  |
+| `Coverage threshold`      | 覆盖率不足       | 添加更多测试用例     |
+
+### 6. 紧急生产问题处理
 
 #### 步骤1: 立即回滚生产环境
 ```bash
