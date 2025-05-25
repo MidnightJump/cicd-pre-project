@@ -46,7 +46,7 @@ jobs:
 
       - name: Deploy to ${{ matrix.environment.name }} server
         if: steps.vars.outputs.should_deploy == 'true'
-        uses: appleboy/ssh-action@v1.0.0
+        uses: appleboy/ssh-action@v1.1.0
         with:
           host: ${{ matrix.environment.server }}
           username: ${{ secrets.SERVER_USERNAME }}

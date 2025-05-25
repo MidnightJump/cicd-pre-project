@@ -12,6 +12,7 @@
 - 测试失败 (单元测试、集成测试)
 - 安全检查失败 (Bandit, pip-audit)
 - Docker构建失败
+- GitHub Actions版本过时问题
 
 ### 2. 部署问题
 - 容器启动失败
@@ -71,6 +72,9 @@ isort .
 # 修复安全问题
 # 更新依赖或修复代码
 
+# 修复GitHub Actions版本问题
+bash update-github-actions.sh
+
 # 重新测试
 pytest tests/ -v
 ```
@@ -83,7 +87,8 @@ git commit -m "hotfix: fix CI/CD issues
 - Fix code formatting with black and isort
 - Fix unit test failures
 - Resolve security warnings
-- Update dependencies"
+- Update dependencies
+- Update GitHub Actions to latest versions"
 
 git push origin hotfix/fix-ci-$(date +%Y%m%d%H%M)
 ```
