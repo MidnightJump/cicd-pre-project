@@ -165,7 +165,72 @@ git commit -m "feat: fix API endpoint bug
 git push origin feature/fix-api-bug-$(date +%Y%m%d)
 ```
 
-### 4. 紧急生产问题处理
+### 4. GitHub Actions版本问题处理
+
+#### 常见GitHub Actions错误：
+- `Missing download info for actions/xxx@v3`
+- `Error downloading action`
+- `Action not found`
+- `Deprecated action warning`
+
+#### 处理步骤：
+
+##### 步骤1: 检查过时的action版本
+```bash
+# 运行版本检查脚本
+bash update-github-actions.sh
+
+# 手动检查工作流文件
+grep -r "uses:" .github/workflows/
+```
+
+##### 步骤2: 更新到最新版本
+```bash
+# 创建修复分支
+git checkout develop
+git pull origin develop
+git checkout -b hotfix/update-github-actions-$(date +%Y%m%d)
+
+# 更新常见的过时版本
+sed -i 's/actions\/upload-artifact@v3/actions\/upload-artifact@v4/g' .github/workflows/*.yml
+sed -i 's/actions\/setup-python@v4/actions\/setup-python@v5/g' .github/workflows/*.yml
+sed -i 's/actions\/cache@v3/actions\/cache@v4/g' .github/workflows/*.yml
+sed -i 's/docker\/setup-buildx-action@v3/docker\/setup-buildx-action@v4/g' .github/workflows/*.yml
+sed -i 's/docker\/login-action@v3/docker\/login-action@v4/g' .github/workflows/*.yml
+sed -i 's/codecov\/codecov-action@v3/codecov\/codecov-action@v4/g' .github/workflows/*.yml
+```
+
+##### 步骤3: 验证更新
+```bash
+# 检查语法
+yamllint .github/workflows/*.yml
+
+# 提交更改
+git add .github/workflows/
+git commit -m "hotfix: update GitHub Actions to latest versions
+
+- Update actions/upload-artifact v3 → v4
+- Update actions/setup-python v4 → v5  
+- Update actions/cache v3 → v4
+- Update Docker actions to latest versions
+- Fix Missing download info errors"
+
+git push origin hotfix/update-github-actions-$(date +%Y%m%d)
+```
+
+##### 推荐的action版本：
+| Action                       | 推荐版本 | 说明           |
+| ---------------------------- | -------- | -------------- |
+| `actions/checkout`           | v4       | 代码检出       |
+| `actions/setup-python`       | v5       | Python环境设置 |
+| `actions/cache`              | v4       | 依赖缓存       |
+| `actions/upload-artifact`    | v4       | 文件上传       |
+| `docker/setup-buildx-action` | v4       | Docker Buildx  |
+| `docker/login-action`        | v4       | Docker登录     |
+| `docker/build-push-action`   | v6       | Docker构建推送 |
+| `codecov/codecov-action`     | v4       | 代码覆盖率     |
+
+### 5. 紧急生产问题处理
 
 #### 步骤1: 立即回滚生产环境
 ```bash
