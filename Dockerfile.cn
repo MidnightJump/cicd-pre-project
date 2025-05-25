@@ -1,18 +1,22 @@
+# 使用阿里云镜像源的 Dockerfile
 # Base stage
-FROM python:3.11-slim AS base
+FROM registry.cn-hangzhou.aliyuncs.com/library/python:3.11-slim AS base
 
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+# 使用阿里云的 APT 镜像源
+RUN sed -i 's@http://deb.debian.org@http://mirrors.aliyun.com@g' /etc/apt/sources.list && \
+    apt-get update && apt-get install -y \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements files
 COPY requirements.txt .
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# 使用阿里云的 PyPI 镜像源
+RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ && \
+    pip config set install.trusted-host mirrors.aliyun.com && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Development stage
 FROM base AS development
