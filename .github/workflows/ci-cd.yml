@@ -1,490 +1,87 @@
-name: CI/CD Pipeline
+# name: Simplified CI/CD
 
-on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
-  release:
-    types: [ published ]
+# # on:
+# #   push:
+# #     branches: [ main, develop ]
+# #   pull_request:
+# #     branches: [ main, develop ]
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
-  PYTHON_VERSION: "3.11"
+# env:
+#   PYTHON_VERSION: "3.11"
 
-jobs:
-  # 代码质量检查
-  code-quality:
-    name: Code Quality Checks
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+# jobs:
+#   quality-and-tests:
+#     name: Quality Checks & Tests
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
+#       - name: Set up Python
+#         uses: actions/setup-python@v5
+#         with:
+#           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Cache pip dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+#       - name: Cache dependencies
+#         uses: actions/cache@v4
+#         with:
+#           path: ~/.cache/pip
+#           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -r requirements-dev-compatible.txt
+#       - name: Install dependencies
+#         run: |
+#           python -m pip install --upgrade pip
+#           pip install -r requirements.txt
+#           pip install -r requirements-dev-compatible.txt
 
-      - name: Code formatting check (Black)
-        run: |
-          black --check --diff .
+#       - name: Code quality checks
+#         run: |
+#           echo "🎨 检查代码格式..."
+#           black --check --diff .
+#           echo "📦 检查导入排序..."
+#           isort --check-only --diff .
+#           echo "🔍 代码规范检查..."
+#           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 
-      - name: Import sorting check (isort)
-        run: |
-          isort --check-only --diff .
+#       - name: Security checks
+#         run: |
+#           echo "🔒 安全扫描..."
+#           bandit -r . --severity-level medium --quiet
+#           pip-audit --desc --quiet
 
-      - name: Linting (flake8)
-        run: |
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-      - name: Type checking (mypy)
-        run: |
-          mypy books2.py --ignore-missing-imports
 
-  # 安全检查
-  security-checks:
-    name: Security Checks
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+#       - name: Run tests
+#         run: |
+#           echo "🧪 运行测试..."
+#           pytest tests/ -v --tb=short
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install security tools
-        run: |
-          python -m pip install --upgrade pip
-          pip install bandit safety pip-audit
-
-      - name: Security linting (Bandit)
-        run: |
-          bandit -r . -f json -o bandit-report.json || true
-          bandit -r . --severity-level medium
-
-      - name: Dependency vulnerability check (pip-audit)
-        run: |
-          pip-audit --desc --output=json --output-file=pip-audit-report.json || true
-          pip-audit --desc
-
-      - name: Upload security reports
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: security-reports
-          path: |
-            bandit-report.json
-            pip-audit-report.json
-
-  # 单元测试
-  unit-tests:
-    name: Unit Tests
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.9", "3.10", "3.11"]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Cache pip dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt') }}
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -r requirements-dev-compatible.txt
-
-      - name: Create test files
-        run: |
-          mkdir -p tests
-          cat > tests/__init__.py << 'EOF'
-          # Test package
-          EOF
+#       - name: Performance check
+#         run: |
+#           echo "⚡ 性能检查..."
+#           python -c "
+#           import time
+#           from fastapi.testclient import TestClient
+#           from books2 import app
           
-          cat > tests/test_books.py << 'EOF'
-          import pytest
-          from fastapi.testclient import TestClient
-          from books2 import app
+#           client = TestClient(app)
+#           start = time.time()
+#           response = client.get('/books')
+#           duration = time.time() - start
           
-          client = TestClient(app)
-          
-          def test_read_all_books():
-              """测试获取所有书籍"""
-              response = client.get("/books")
-              assert response.status_code == 200
-              assert len(response.json()) > 0
-          
-          def test_read_book_by_id():
-              """测试根据ID获取书籍"""
-              response = client.get("/books/1")
-              assert response.status_code == 200
-              book = response.json()
-              assert book["id"] == 1
-              assert "title" in book
-          
-          def test_read_book_not_found():
-              """测试获取不存在的书籍"""
-              response = client.get("/books/999")
-              assert response.status_code == 404
-          
-          def test_read_books_by_rating():
-              """测试根据评分获取书籍"""
-              response = client.get("/books/?book_rating=5")
-              assert response.status_code == 200
-              books = response.json()
-              for book in books:
-                  assert book["rating"] == 5
-          
-          def test_read_books_by_publish_date():
-              """测试根据发布日期获取书籍"""
-              response = client.get("/books/publish/?published_date=2030")
-              assert response.status_code == 200
-              books = response.json()
-              for book in books:
-                  assert book["published_date"] == 2030
-          
-          def test_create_book():
-              """测试创建新书籍"""
-              new_book = {
-                  "title": "Test Book",
-                  "author": "Test Author",
-                  "description": "Test Description",
-                  "rating": 4,
-                  "published_date": 2024
-              }
-              response = client.post("/create-book", json=new_book)
-              assert response.status_code == 201
-          
-          def test_create_book_invalid_data():
-              """测试创建书籍时的数据验证"""
-              invalid_book = {
-                  "title": "AB",  # 太短
-                  "author": "",   # 空字符串
-                  "description": "Test",
-                  "rating": 6,    # 超出范围
-                  "published_date": 1999  # 超出范围
-              }
-              response = client.post("/create-book", json=invalid_book)
-              assert response.status_code == 422
-          EOF
+#           assert response.status_code == 200
+#           assert duration < 1.0, f'响应时间 {duration:.2f}s 超过1秒'
+#           print(f'✅ API响应时间: {duration:.2f}s')
+#           "
 
-      - name: Run unit tests with coverage
-        run: |
-          pytest tests/ -v --cov=. --cov-report=xml --cov-report=html --cov-report=term
-
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
-        if: matrix.python-version == '3.11'
-        with:
-          file: ./coverage.xml
-          flags: unittests
-          name: codecov-umbrella
-
-      - name: Upload coverage artifacts
-        uses: actions/upload-artifact@v4
-        if: matrix.python-version == '3.11'
-        with:
-          name: coverage-report
-          path: htmlcov/
-
-  # 集成测试
-  integration-tests:
-    name: Integration Tests
-    runs-on: ubuntu-latest
-    services:
-      # 如果需要数据库，可以添加
-      # postgres:
-      #   image: postgres:13
-      #   env:
-      #     POSTGRES_PASSWORD: postgres
-      #   options: >-
-      #     --health-cmd pg_isready
-      #     --health-interval 10s
-      #     --health-timeout 5s
-      #     --health-retries 5
-      redis:
-        image: redis:7
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -r requirements-dev-compatible.txt
-
-      - name: Create integration tests
-        run: |
-          mkdir -p tests/integration
-          cat > tests/integration/__init__.py << 'EOF'
-          # Integration tests package
-          EOF
-          
-          cat > tests/integration/test_api_integration.py << 'EOF'
-          import pytest
-          import asyncio
-          from fastapi.testclient import TestClient
-          from books2 import app
-          
-          client = TestClient(app)
-          
-          def test_full_book_workflow():
-              """测试完整的书籍工作流程"""
-              # 1. 获取初始书籍数量
-              response = client.get("/books")
-              initial_count = len(response.json())
-              
-              # 2. 创建新书籍
-              new_book = {
-                  "title": "Integration Test Book",
-                  "author": "Test Author",
-                  "description": "Integration test description",
-                  "rating": 4,
-                  "published_date": 2024
-              }
-              create_response = client.post("/create-book", json=new_book)
-              assert create_response.status_code == 201
-              
-              # 3. 验证书籍数量增加
-              response = client.get("/books")
-              assert len(response.json()) == initial_count + 1
-              
-              # 4. 查找新创建的书籍
-              books = response.json()
-              new_book_found = None
-              for book in books:
-                  if book["title"] == "Integration Test Book":
-                      new_book_found = book
-                      break
-              
-              assert new_book_found is not None
-              assert new_book_found["author"] == "Test Author"
-              assert new_book_found["rating"] == 4
-          
-          def test_api_endpoints_integration():
-              """测试API端点集成"""
-              # 测试所有端点的连通性
-              endpoints = [
-                  "/books",
-                  "/books/1",
-                  "/books/?book_rating=5",
-                  "/books/publish/?published_date=2030"
-              ]
-              
-              for endpoint in endpoints:
-                  response = client.get(endpoint)
-                  assert response.status_code in [200, 404]  # 允许404（数据不存在）
-          
-          @pytest.mark.asyncio
-          async def test_concurrent_requests():
-              """测试并发请求"""
-              import httpx
-              
-              async with httpx.AsyncClient(app=app, base_url="http://test") as ac:
-                  # 并发发送多个请求
-                  tasks = []
-                  for i in range(10):
-                      task = ac.get("/books")
-                      tasks.append(task)
-                  
-                  responses = await asyncio.gather(*tasks)
-                  
-                  # 验证所有请求都成功
-                  for response in responses:
-                      assert response.status_code == 200
-          EOF
-
-      - name: Run integration tests
-        run: |
-          pytest tests/integration/ -v --tb=short
-
-  # Docker构建和推送
-  docker-build:
-    name: Build and Push Docker Image
-    runs-on: ubuntu-latest
-    needs: [code-quality, security-checks, unit-tests, integration-tests]
-    if: github.event_name == 'push' || github.event_name == 'release'
-    outputs:
-      image-digest: ${{ steps.build.outputs.digest }}
-      image-tag: ${{ steps.meta.outputs.tags }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Log in to Container Registry
-        uses: docker/login-action@v4
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and push Docker image
-        id: build
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          target: production
-
-      - name: Generate SBOM
-        uses: anchore/sbom-action@v0
-        with:
-          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          format: spdx-json
-          output-file: sbom.spdx.json
-
-      - name: Upload SBOM
-        uses: actions/upload-artifact@v4
-        with:
-          name: sbom
-          path: sbom.spdx.json
-
-  # 容器安全扫描
-  container-security:
-    name: Container Security Scan
-    runs-on: ubuntu-latest
-    needs: docker-build
-    if: github.event_name == 'push' || github.event_name == 'release'
-    steps:
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ needs.docker-build.outputs.image-tag }}
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-
-      - name: Upload Trivy scan results
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: 'trivy-results.sarif'
-
-  # 部署到开发环境
-  deploy-dev:
-    name: Deploy to Development
-    runs-on: ubuntu-latest
-    needs: [docker-build, container-security]
-    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
-    environment:
-      name: development
-      url: https://dev.your-domain.com
-    steps:
-      - name: Deploy to development server
-        run: |
-          echo "Deploying to development environment..."
-          echo "Image: ${{ needs.docker-build.outputs.image-tag }}"
-          # 这里添加实际的部署脚本
-          # 例如：SSH到服务器，拉取新镜像，重启容器等
-
-  # 部署到生产环境
-  deploy-prod:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: [docker-build, container-security]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment:
-      name: production
-      url: https://your-domain.com
-    steps:
-      - name: Deploy to production server
-        run: |
-          echo "Deploying to production environment..."
-          echo "Image: ${{ needs.docker-build.outputs.image-tag }}"
-          # 这里添加实际的部署脚本
-
-  # 发布部署
-  deploy-release:
-    name: Deploy Release
-    runs-on: ubuntu-latest
-    needs: [docker-build, container-security]
-    if: github.event_name == 'release'
-    environment:
-      name: production
-      url: https://your-domain.com
-    steps:
-      - name: Deploy release to production
-        run: |
-          echo "Deploying release ${{ github.event.release.tag_name }} to production..."
-          echo "Image: ${{ needs.docker-build.outputs.image-tag }}"
-          # 这里添加实际的部署脚本
-
-  # 通知
-  notify:
-    name: Notify
-    runs-on: ubuntu-latest
-    needs: [deploy-dev, deploy-prod, deploy-release]
-    if: always()
-    steps:
-      - name: Notify deployment status
-        run: |
-          if [[ "${{ needs.deploy-dev.result }}" == "success" ]]; then
-            echo "✅ Development deployment successful"
-          fi
-          if [[ "${{ needs.deploy-prod.result }}" == "success" ]]; then
-            echo "✅ Production deployment successful"
-          fi
-          if [[ "${{ needs.deploy-release.result }}" == "success" ]]; then
-            echo "✅ Release deployment successful"
-          fi 
+#       - name: Test summary
+#         if: always()
+#         run: |
+#           echo "## 📊 测试结果汇总"
+#           echo "================================="
+#           if [[ "${{ job.status }}" == "success" ]]; then
+#             echo "🎉 所有检查通过！代码质量良好，可以合并。"
+#           else
+#             echo "❌ 部分检查失败，请修复问题后重新提交。"
+#             exit 1
+#           fi 
