@@ -12,16 +12,15 @@
 - **查询功能**: 支持按评分、发布日期查询
 - **RESTful设计**: 符合REST API设计规范
 
-### 🔄 CI/CD功能
-- **✅ 单元测试** (Unit Tests)
-- **✅ 集成测试** (Integration Tests)
-- **✅ 代码风格检查** (Black, isort)
+### 🔄 CI/CD功能 (简化版)
+- **✅ 样式检查** (Black, isort)
 - **✅ 代码质量检查** (flake8, mypy)
 - **✅ 安全检查** (Bandit, pip-audit)
-- **✅ 容器安全扫描** (Trivy)
-- **✅ 自动化部署** (Docker + SSH)
-- **✅ 健康检查** (Health Checks)
-- **✅ 自动回滚** (Rollback)
+- **✅ 单元测试** (Unit Tests)
+- **✅ 集成测试** (Integration Tests)
+- **✅ 其他自动化测试** (性能测试，API文档验证)
+
+> 📝 当前使用简化版CI/CD流水线，专注于代码质量和测试。详见 [`CI-CD-SIMPLIFIED.md`](CI-CD-SIMPLIFIED.md)
 
 ## 📋 API端点
 
@@ -106,34 +105,29 @@ bash test-ci-cd.sh
 
 ## 🔧 CI/CD配置
 
-### GitHub Actions工作流
+### 🎯 简化版GitHub Actions工作流
 
 #### 主CI/CD流水线 (`.github/workflows/ci-cd.yml`)
 - **触发条件**: push到main/develop分支，PR创建
-- **包含步骤**:
-  1. 代码质量检查 (Black, isort, flake8, mypy)
-  2. 安全检查 (Bandit, pip-audit)
-  3. 单元测试 (多Python版本)
-  4. 集成测试 (API端点测试)
-  5. Docker构建和推送
-  6. 容器安全扫描
+- **包含jobs**:
+  1. **样式和代码质量检查** (Black, isort, flake8, mypy)
+  2. **安全检查** (Bandit, pip-audit)
+  3. **单元测试** (多Python版本，覆盖率检查)
+  4. **集成测试** (API端点测试，并发测试)
+  5. **其他自动化测试** (性能测试，文档验证)
+  6. **测试结果汇总** (统一展示所有结果)
 
-#### 部署工作流 (`.github/workflows/deploy.yml`)
-- **触发条件**: 主CI/CD流水线成功完成
-- **部署环境**:
-  - `develop` 分支 → 开发环境
-  - `main` 分支 → 生产环境
-- **包含功能**: SSH部署、健康检查、自动回滚
+#### 特点
+- ⚡ **快速反馈**: 专注测试，无Docker构建等待
+- 🎯 **专注质量**: 重点关注代码质量和功能正确性
+- 💰 **节省资源**: 减少CI/CD运行时间和成本
+- 📝 **清晰报告**: 直观的测试结果展示
 
-### 必需的GitHub Secrets
+### 📚 扩展选项
 
-```bash
-DEV_SERVER_HOST=your-dev-server.com      # 开发服务器
-PROD_SERVER_HOST=your-prod-server.com    # 生产服务器
-SERVER_USERNAME=deploy                    # SSH用户名
-SERVER_SSH_KEY=-----BEGIN PRIVATE KEY----- # SSH私钥
-SERVER_SSH_PORT=22                        # SSH端口（可选）
-```
+如需要完整的Docker构建和部署功能，可参考：
+- [`deploy.yml`](.github/workflows/deploy.yml) - 部署工作流（已保留）
+- [`CI-CD-GUIDE.md`](CI-CD-GUIDE.md) - 完整CI/CD配置指南
 
 ## 📊 测试覆盖率
 
