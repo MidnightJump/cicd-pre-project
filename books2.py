@@ -7,29 +7,13 @@ from starlette import status
 app = FastAPI()
 
 
-class Book:
+class Book(BaseModel):
     id: int
     title: str
     author: str
     description: str
     rating: int
     published_date: int
-
-    def __init__(
-        self,
-        id: int,
-        title: str,
-        author: str,
-        description: str,
-        rating: int,
-        published_date: int,
-    ) -> None:
-        self.id = id
-        self.title = title
-        self.author = author
-        self.description = description
-        self.rating = rating
-        self.published_date = published_date
 
 
 class BookRequest(BaseModel):
@@ -54,12 +38,54 @@ class BookRequest(BaseModel):
 
 
 BOOKS = [
-    Book(1, "Computer Science Pro", "codingwithroby", "A very nice book!", 5, 2030),
-    Book(2, "Be Fast with FastAPI", "codingwithroby", "A great book!", 5, 2030),
-    Book(3, "Master Endpoints", "codingwithroby", "A awesome book!", 5, 2029),
-    Book(4, "HP1", "Author 1", "Book Description", 2, 2028),
-    Book(5, "HP2", "Author 2", "Book Description", 3, 2027),
-    Book(6, "HP3", "Author 3", "Book Description", 1, 2026),
+    Book(
+        id=1,
+        title="Computer Science Pro",
+        author="codingwithroby",
+        description="A very nice book!",
+        rating=5,
+        published_date=2030,
+    ),
+    Book(
+        id=2,
+        title="Be Fast with FastAPI",
+        author="codingwithroby",
+        description="A great book!",
+        rating=5,
+        published_date=2030,
+    ),
+    Book(
+        id=3,
+        title="Master Endpoints",
+        author="codingwithroby",
+        description="A awesome book!",
+        rating=5,
+        published_date=2029,
+    ),
+    Book(
+        id=4,
+        title="HP1",
+        author="Author 1",
+        description="Book Description",
+        rating=2,
+        published_date=2028,
+    ),
+    Book(
+        id=5,
+        title="HP2",
+        author="Author 2",
+        description="Book Description",
+        rating=3,
+        published_date=2027,
+    ),
+    Book(
+        id=6,
+        title="HP3",
+        author="Author 3",
+        description="Book Description",
+        rating=1,
+        published_date=2026,
+    ),
 ]
 
 
@@ -103,8 +129,10 @@ async def create_book(book_request: BookRequest) -> None:
 
 
 def find_book_id(book: Book) -> Book:
-    book.id = 1 if len(BOOKS) == 0 else BOOKS[-1].id + 1
-    return book
+    new_id = 1 if len(BOOKS) == 0 else BOOKS[-1].id + 1
+    book_dict = book.model_dump()
+    book_dict["id"] = new_id
+    return Book(**book_dict)
 
 
 @app.put("/books/update_book", status_code=status.HTTP_204_NO_CONTENT)
