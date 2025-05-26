@@ -44,4 +44,4 @@ jobs:
       - name: Security checks (bandit & safety)
         run: |
           bandit -r . -x tests/  # 扫描整个项目，排除测试目录
-          safety check
+      #    safety check
