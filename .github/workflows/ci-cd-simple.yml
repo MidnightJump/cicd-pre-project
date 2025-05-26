@@ -47,7 +47,7 @@ jobs:
         run: |
           echo "🔒 安全扫描..."
           bandit -r . --severity-level medium --quiet
-          pip-audit --desc --quiet
+          pip-audit --desc
 
       # - name: Create test files
       #   run: |
