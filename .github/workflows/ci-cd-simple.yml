@@ -1,136 +1,30 @@
-name: Simplified CI/CD
+name: FastAPI Docker Image Test, Build and Push to DockerHub
 
 on:
   push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
-
-env:
-  PYTHON_VERSION: "3.10"
+    branches: [ 'main', 'feature/**']
+    tags: [ 'v*']
+  # pull_request:
+  #   branches: [ 'main' ]
 
 jobs:
-  quality-and-tests:
-    name: Quality Checks & Tests
+
+  code-quality:
+    name: Check coding standards
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install poetry
+        run: pipx install poetry
+
+      - uses: actions/setup-python@v4
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
+          python-version: 3.11
+          cache: poetry
 
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+      - name: Install Python dependencies
+        run: poetry install
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -r requirements-dev-compatible.txt
-
-      # - name: Code quality checks
-      #   run: |
-      #     echo "🎨 检查代码格式..."
-      #     black --check --diff .
-      #     echo "📦 检查导入排序..."
-      #     isort --check-only --diff .
-      #     echo "🔍 代码规范检查..."
-      #     flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-
-      - name: Security checks
-        run: |
-          echo "🔒 安全扫描..."
-          bandit -r . --severity-level medium --quiet
-          pip-audit --desc
-
-      # - name: Create test files
-      #   run: |
-      #     mkdir -p tests
-      #     cat > tests/test_books.py << 'EOF'
-      #     import pytest
-      #     from fastapi.testclient import TestClient
-      #     from books2 import app
-          
-      #     client = TestClient(app)
-          
-      #     def test_read_all_books():
-      #         response = client.get("/books")
-      #         assert response.status_code == 200
-      #         assert len(response.json()) > 0
-          
-      #     def test_read_book_by_id():
-      #         response = client.get("/books/1")
-      #         assert response.status_code == 200
-      #         book = response.json()
-      #         assert book["id"] == 1
-          
-      #     def test_create_book():
-      #         new_book = {
-      #             "title": "Test Book",
-      #             "author": "Test Author", 
-      #             "description": "Test Description",
-      #             "rating": 4,
-      #             "published_date": 2024
-      #         }
-      #         response = client.post("/create-book", json=new_book)
-      #         assert response.status_code == 201
-          
-      #     def test_book_workflow():
-      #         # 完整工作流测试
-      #         response = client.get("/books")
-      #         initial_count = len(response.json())
-              
-      #         new_book = {
-      #             "title": "Workflow Test",
-      #             "author": "Test Author",
-      #             "description": "Integration test",
-      #             "rating": 5,
-      #             "published_date": 2024
-      #         }
-      #         create_response = client.post("/create-book", json=new_book)
-      #         assert create_response.status_code == 201
-              
-      #         response = client.get("/books")
-      #         assert len(response.json()) == initial_count + 1
-      #     EOF
-
-      # - name: Run tests
-      #   run: |
-      #     echo "🧪 运行测试..."
-      #     pytest tests/ -v --tb=short
-
-      - name: Performance check
-        run: |
-          echo "⚡ 性能检查..."
-          python -c "
-          import time
-          from fastapi.testclient import TestClient
-          from books2 import app
-          
-          client = TestClient(app)
-          start = time.time()
-          response = client.get('/books')
-          duration = time.time() - start
-          
-          assert response.status_code == 200
-          assert duration < 1.0, f'响应时间 {duration:.2f}s 超过1秒'
-          print(f'✅ API响应时间: {duration:.2f}s')
-          "
-
-      # - name: Test summary
-      #   if: always()
-      #   run: |
-      #     echo "## 📊 测试结果汇总"
-      #     echo "================================="
-      #     if [[ "${{ job.status }}" == "success" ]]; then
-      #       echo "🎉 所有检查通过！代码质量良好，可以合并。"
-      #     else
-      #       echo "❌ 部分检查失败，请修复问题后重新提交。"
-      #       exit 1
-      #     fi 
+      - name: Check code formatting
+        run: poetry run poe black-check
