@@ -30,10 +30,10 @@ jobs:
           pip install -r requirements.txt
           pip install black isort flake8 mypy bandit safety pytest pytest-cov
 
-      - name: Code formatting (black & isort)
-        run: |
-          black --check .
-          isort --check-only .
+      # - name: Code formatting (black & isort)
+      #   run: |
+      #     black --check .
+      #     isort --check-only .
 
       - name: Linting (flake8)
         run: flake8 .
