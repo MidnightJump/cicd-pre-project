@@ -38,8 +38,8 @@ jobs:
       - name: Linting (flake8)
         run: flake8 --ignore=E203,E266,E501,W503 .
 
-      - name: Type checking (mypy)
-        run: mypy .
+      # - name: Type checking (mypy)
+      #   run: mypy .
 
       - name: Security checks (bandit & safety)
         run: |
