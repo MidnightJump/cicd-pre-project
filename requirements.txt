@@ -1,5 +1,7 @@
-fastapi==0.104.1
 uvicorn[standard]==0.24.0
 pydantic==2.5.0
-starlette==0.27.0
-python-multipart==0.0.6 
+black==24.3.0
+fastapi==0.109.1
+python-multipart==0.0.18
+setuptools==78.1.1
+starlette==0.40.0

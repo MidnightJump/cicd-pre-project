@@ -123,14 +123,14 @@ jobs:
           print(f'✅ API响应时间: {duration:.2f}s')
           "
 
-      - name: Test summary
-        if: always()
-        run: |
-          echo "## 📊 测试结果汇总"
-          echo "================================="
-          if [[ "${{ job.status }}" == "success" ]]; then
-            echo "🎉 所有检查通过！代码质量良好，可以合并。"
-          else
-            echo "❌ 部分检查失败，请修复问题后重新提交。"
-            exit 1
-          fi 
+      # - name: Test summary
+      #   if: always()
+      #   run: |
+      #     echo "## 📊 测试结果汇总"
+      #     echo "================================="
+      #     if [[ "${{ job.status }}" == "success" ]]; then
+      #       echo "🎉 所有检查通过！代码质量良好，可以合并。"
+      #     else
+      #       echo "❌ 部分检查失败，请修复问题后重新提交。"
+      #       exit 1
+      #     fi 
